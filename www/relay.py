@@ -30,6 +30,8 @@ def relay(source_serial, destination_serial, label):
                     data_queue.put({'event': 'TIME', 'value': time_value})
                 except (IndexError, ValueError):
                     pass
+            elif 'WAITING' in data:
+                data_queue.put({'event': 'WAITING'})
 
             destination_serial.write((data + '\n').encode())
 
