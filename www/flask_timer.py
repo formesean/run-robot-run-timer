@@ -41,6 +41,19 @@ def simulate_button_press():
         print(f"Error sending button press: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/reset_timer', methods=['POST'])
+def reset_timer():
+    global start_time, stop_time, formatted_time
+    try:
+        start_time = None
+        stop_time = None
+        formatted_time = "0:00:000"
+        print("Timer has been reset.")
+        return jsonify({"status": "success", "message": "Timer reset successful"}), 200
+    except Exception as e:
+        print(f"Error resetting timer: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @app.route("/")
 def home():
     return render_template_string("""
@@ -94,6 +107,27 @@ def home():
             background-color: #388e3c;
             transform: scale(0.98);
           }
+
+          #resetButton {
+            font-size: 1.2rem;
+            padding: 12px 25px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+          }
+
+          #resetButton:hover {
+            background-color: #e53935;
+            transform: scale(1.05);
+          }
+
+          #resetButton:active {
+            background-color: #c62828;
+            transform: scale(0.98);
+          }
         </style>
       </head>
       <body>
@@ -101,6 +135,7 @@ def home():
         <div id="status">Waiting for signal...</div>
         <div id="timer">0:00:000</div>
         <button id="simulatedButton">Ready</button>
+        <button id="resetButton" style="margin-top: 20px;">Reset</button>
         <script>
           let start = null, stop = null, interval = null;
 
@@ -114,13 +149,28 @@ def home():
             }
           });
 
+          document.getElementById('resetButton').addEventListener('click', async () => {
+            try {
+              await fetch('/reset_timer', {
+                method: 'POST'
+              });
+              start = null;
+              stop = null;
+              if (interval) clearInterval(interval);
+              document.getElementById('status').innerText = "Waiting for signal...";
+              document.getElementById('timer').innerText = "0:00:000";
+            } catch (err) {
+              console.error('Error resetting timer:', err);
+            }
+          });
 
           function formatTime(ms) {
             let min = Math.floor(ms / 60000),
                 sec = Math.floor((ms % 60000) / 1000),
                 msLeft = ms % 1000;
-            return `${String(min).padStart(1, '0')}:${String(sec).padStart(2, '0')}:${String(msLeft).padStart(3, '0')}`;
+            return `${min}:${String(sec).padStart(2, '0')}:${String(msLeft).padStart(3, '0')}`;
           }
+
 
           async function fetchTimerData() {
             try {
